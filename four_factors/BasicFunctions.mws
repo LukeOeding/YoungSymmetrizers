@@ -1,0 +1,241 @@
+with(LinearAlgebra): with(combinat):with(ListTools):
+
+reverse := proc(L::list) return [seq(L[nops(L)-i+1], i = 1 .. nops(L))] end proc:
+
+mypartition := proc(d ::integer) 
+ local X;
+  X := reverse(partition(d)):
+  return [seq(reverse(X[i]),i=1..numbpart(d))];
+end proc:
+
+myconjpart := proc (L::list) local preK, K; 
+  description "I needed to have a conjugate partition function that is in decreasing order."; 
+  return reverse(conjpart(reverse(L)));
+end proc:
+smash := proc (u::anything, v::anything) 
+  description "smash two vectors together"; 
+ 
+  [seq(u[i], i = 1 .. nops(u)), seq(v[i], i = 1 .. nops(v))] 
+end proc:
+
+dimModule := proc (LL::list, k) local L, m; 
+  description "this just applies a formula from Fulton and Harris pg 77";
+  L := smash(LL, [seq(0, i = 1 .. k)]); m := `*`(seq(seq((L[i]-L[j]+j-i)/(j-i), j = i+1 .. k), i = 1 .. k-1)); 
+  if k < nops(LL) then m := 0 end if; 
+ return m 
+end proc:
+
+numbclass:= proc (L::list) 
+local m, f, g, r, top, i, j, c, LL; 
+description "see exercise in http://www.math.unibas.ch/~kraft/Papers/KP-Primer.pdf for the formula for computing the number of elements in a given conjugacy class.  This procedure computes the number of elements in the conjugacy class corresponding to a given partition as imput"; 
+
+top := max(seq(L[k], k = 1 .. nops(L))); 
+for i to top do c := 0; 
+ for j to nops(L) do 
+  if L[j] = i then c := c+1 end if 
+ end do; 
+ r[i] := c
+end do;
+LL := [seq(r[i], i = 1 .. top)];
+m := `+`(seq(i*LL[i], i = 1 .. nops(LL))); 
+f := `*`(seq(i^LL[i], i = 1 .. nops(LL))); 
+g := `*`(seq(factorial(LL[i]), i = 1 .. nops(LL))); 
+return factorial(m)/(f*g) 
+end proc:
+
+mults := proc (degree::integer, numfacts::integer, maxdim::integer)
+local M, Par, i, p, X, IP2, N, NN, k, numpar, temp, stopper, d, n, count, myindicator, myoutput, breaker, cc, K; 
+description "This procedure computes the multiplicites of the irreducible modules in the decomposition of S^d(A_1\otimes \dots \otimes A_n).  It expects three integers, the degree - d, the number of factors -n, and the maximum dimension of the A_i - maxdim."; 
+d := degree; n := numfacts; 
+if d = 1 then return start*over end if;
+  K := partition(d);
+  N := [seq(numbclass(K[i]), i = 1 .. nops(K))];
+  M := character(d);
+ Par := mypartition(d);
+ numpar := nops(Par);
+ count := 1;
+
+ for i to numpar do 
+ if evalb(nops(Par[i]) <= maxdim) then myindicator[count] := i; count := count+1 end if 
+ end do; 
+ stopper :=count-1; count := 'count';
+for i to stopper do
+ X[myindicator[i]] := S[Par[myindicator[i]]] 
+ end do;
+  i := 'i'; cc :=1;
+ if n <= 10 then breaker := [seq(1, i = 1 .. n), seq(0, i = n+1 .. 11)]; 
+for i[1] to stopper do
+ for i[2] from i[1] to i[1]+breaker[2]*(stopper-i[1]) do
+  for i[3] from i[2] to i[2]+breaker[3]*(stopper-i[2]) do
+   for i[4] from i[3] to i[3]+breaker[4]*(stopper-i[3]) do
+    for i[5] from i[4] to i[4]+breaker[5]*(stopper-i[4]) do
+     for i[6] from i[5] to i[5]+breaker[6]*(stopper-i[5]) do
+      for i[7] from i[6] to i[6]+breaker[7]*(stopper-i[6]) do
+       for i[8] from i[7] to i[7]+breaker[8]*(stopper-i[7]) do
+        for i[9] from i[8] to i[8]+breaker[9]*(stopper-i[8]) do
+         for i[10] from i[9] to i[9]+breaker[10]*(stopper-i[9]) do
+  temp := simplify((`+`(seq(N[q]*(`*`(seq(M[myindicator[i[p]], q], p = 1 .. n))), q = 1 .. nops(Par))))/factorial(d));
+   if 0 < temp then myoutput[cc] := [temp, [seq(X[myindicator[i[p]]], p = 1 .. n)]]; cc := cc+1 end if 
+         end do
+        end do
+       end do
+      end do
+     end do
+    end do
+   end do
+  end do
+ end do
+end do
+end if;
+return [seq(myoutput[i], i = 1 .. cc-1)]
+end proc:
+
+makeDets:=proc(a,LL::list,mu::list)
+ local L:
+ description "this procedure makes a product of determinants of sizes determined by a partition LL. The first index of each column is twisted by a permutation mu.";
+ L:=myconjpart(LL):
+  return `*`(seq(Determinant(Matrix([seq([seq(a[op(j+( `+`(seq(op(p,L),p=1..k-1))),mu),i],j=1 .. op(k,L))], i = 1 .. op(k,L))])) ,k=1..nops(L)))
+end proc:
+
+makeUnsymmetric:=proc(J::list,K::list)
+description "this procedure takes in a list of partitions J and a list of permutations K and produces the unsymmetrized (and factored!) tensor"; 
+ local alpha;
+  if(nops(J)<> nops(K)) then return "uneven";
+ else
+  alpha:= [a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z]:
+  return `*`(seq(makeDets(alpha[i],J[i],K[i]),i=1..nops(J)))
+ fi:
+end proc:
+
+unfactor:= proc(X,degree,L::list)
+description "X is the tensor, d is the degree, L is the list of dimensions of the vector spaces":
+  local temp,temp2,p,i;
+  if nops(L) >8 then return "too many factors"; fi:
+if nops(L) = 2 then
+  temp2 := X; 
+  for p to degree do 
+   temp := 0; 
+ for i[1] from 0 to op(1,L)-1 do for i[2] from 0 to op(2,L)-1 do
+  temp := coeff(coeff(temp2, a[p, i[1]+1]), b[p, i[2]+1])*Z[[ seq(i[p],p=1..nops(L) )]]+temp 
+ end do; end do; 
+  temp2 := temp; #print(nops(temp2)) 
+ end do;
+ return temp;
+fi:
+
+if nops(L) = 3 then
+ temp2 := X; 
+ for p to degree do 
+  temp := 0; 
+  for i[1] from 0 to op(1,L) do for i[2] from 0 to op(2,L) do for i[3] from 0 to op(3,L) do 
+ temp := coeff(coeff(coeff(temp2, a[p, i[1]+1]), b[p, i[2]+1]), c[p, i[3]+1])*Z[[ seq(i[p],p=1..nops(L) )]]+temp;
+  end do end do end do;  
+  temp2 := temp;
+ end do; 
+ return temp;
+fi:
+
+
+if nops(L) = 4 then
+temp2 := X; 
+ for p to degree do 
+ temp := 0; 
+  for i[1] from 0 to op(1,L) do for i[2] from 0 to op(2,L) do for i[3] from 0 to op(3,L) do for i[4] from 0 to op(4,L) do
+ temp := coeff(coeff(coeff(coeff(temp2, a[p, i[1]+1]), b[p, i[2]+1]), c[p, i[3]+1]),d[p,i[4]+1])*Z[[ seq(i[p],p=1..nops(L) )]]+temp 
+  end do end do end do end do;
+  temp2 := temp;
+  end do;
+return temp;
+fi:
+end proc:
+
+#SFill(L):the set of Standard Young Tableaux of shape L 
+#(I found this on http://www.math.rutgers.edu/~zeilberg/math640_08.html 
+#(accessed May 11, 2011))
+SFill:=proc(L) 
+  local A,L1,n,A1,i,Lara:
+ option remember:
+  Lara:=nops(L):
+  n:=convert(L,`+`):
+  if L=[] then RETURN({[]}): fi:
+A:={}:
+for i from 1 to nops(L)-1 do
+ if L[i]>L[i+1] then
+  L1:=[op(1..i-1,L),L[i]-1,op(i+1..nops(L),L)]:
+  A1:=SFill(L1):
+  A1:={seq( [ op(1..i-1,a1), [op(a1[i]),n],op(i+1..nops(a1),a1)],a1 in A1)}:
+  A:=A union A1:
+ fi:
+od:
+if L[Lara]>1 then
+L1:=[op(1..Lara-1,L),L[Lara]-1]:
+A1:=SFill(L1):
+A1:={seq( [ op(1..Lara-1,a1), [op(a1[Lara]),n]],a1 in A1)}:
+A:=A union A1:
+ else
+L1:=[op(1..Lara-1,L)]:
+A1:=SFill(L1):
+A1:={seq( [ op(1..Lara-1,a1),[n] ],a1 in A1)}:
+A:=A union A1:
+ fi:
+ A:
+end:
+FillLists:=proc(L::list)
+  [seq(FlattenOnce(x) , x in SFill(myconjpart(L)))];
+end proc:
+
+pointinit:=proc()
+  local i,j,k,l, A, roll;
+  global generic, quadrifocal;
+  quadrifocal :={}:
+  generic:={}:
+A:=RandomMatrix(4,12);
+for l from 1 to 3 do for k from 1 to 3 do for j from 1 to 3 do for i from 1 to 3 do
+quadrifocal:= quadrifocal union {Z[[i-1,j-1,k-1,l-1]] = Determinant(SubMatrix(A,[1,2,3,4],[i,j+3,k+6,l+9]))};
+roll:=rand(-100..100):
+generic:= generic union {Z[[i-1,j-1,k-1,l-1]] = roll()};
+od:od:od:od: 
+end proc:
+pointinit():
+
+evalunfactor:= proc(X,degree,L::list,rules)
+description "X is the vector in the tensor algebra,degree is polynomial degree, L is the list of ambient dimensions, and rules are the substitution rules";
+local temp,temp2,p,i;
+if nops(L) = 3 then
+  temp2 := X; 
+  for p to degree do 
+  temp := 0; 
+  for i[1] from 0 to op(1,L) do for i[2] from 0 to op(2,L) do for i[3] from 0 to op(3,L) do 
+   temp := subs(rules,coeff(coeff(coeff(temp2, a[p, i[1]+1]), b[p, i[2]+1]), c[p, i[3]+1])*Z[[ seq(i[p],p=1..nops(L) )]])+temp; 
+  end do end do end do; 
+  temp2 := temp; #print(nops(temp2),"ops");
+ end do; 
+ return temp;
+fi:
+
+
+if nops(L) = 4 then
+temp2 := X; 
+for p to degree do 
+ temp := 0; 
+ for i[1] from 0 to op(1,L) do for i[2] from 0 to op(2,L) do for i[3] from 0 to op(3,L) do for i[4] from 0 to op(4,L) do
+ temp := subs(rules,coeff(coeff(coeff(coeff(temp2, a[p, i[1]+1]), b[p, i[2]+1]), c[p, i[3]+1]),d[p,i[4]+1])*Z[[ seq(i[p],p=1..nops(L) )]])+temp; 
+end do end do end do end do; 
+temp2 := temp; 
+end do; 
+return temp;
+ fi:
+end proc:
+randunfactor:= proc(X,degree,L::list)
+pointinit():
+evalunfactor(X,degree,L,generic);
+end proc:
+
+testnonzero:=proc(T)
+ if evalunfactor(T,degree(T)/4,PDimList,generic) <> 0
+ then
+return(true);
+ else
+return(false);
+ fi:
+end proc:

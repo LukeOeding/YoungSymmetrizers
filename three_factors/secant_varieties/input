@@ -1,0 +1,53 @@
+interface(quiet=true);
+#interface(rtablesize=50);
+Seed:=randomize();
+kernelopts(printbytes=false);
+printf("number of CPUS = %a\n",kernelopts(numcpus));
+
+with(LinearAlgebra): with(combinat):with(ListTools):
+read("data_pts.txt");
+PDimList:=[3,3,3]:
+place:=1:
+myDeg:=11:
+m2file:=cat("sec4_for_M2.",myDeg,".",place):
+fillFile:=cat("fillings_sec4.",myDeg,".",place):
+pointsFile:=cat("points.",myDeg,".",place):
+LinIndFile:=cat("LinIndMat.",myDeg,".",place):
+EvalFile:=cat("EvalMat.",myDeg,".",place):
+resultsFile:=cat("results.",myDeg,".",place):
+
+
+mypoints:=sec4:
+
+read("3fun.mws");
+
+
+BigList:={op(mults(myDeg,3,4))}:
+nops(%);
+myModule:=BigList[place];
+
+GoodFillings:=Array([seq(0,i=1..BigList[place][1])]):
+read(fillFile);
+
+
+TIME:=time():
+fprintf(fd, "testing %a\n", NewList);
+results:=N3Test(myModule,mypoints);
+
+if results<>NULL then
+fd:=fopen(resultsFile,WRITE):
+fprintf(fd, "%a \n", results);
+fclose(fd):
+
+fd:=fopen(m2file,WRITE):
+M2Prep(results);
+fclose(fd):
+fi;
+
+time()-TIME;
+ printf("this step took %a s \n\n", time()-TIME);
+
+
+#quit;
+
+

@@ -1,0 +1,60 @@
+interface(quiet = true):
+  ## produces random generic points and random points on the 4th, 5th and 6th secant variety of (P^3)^{\times 3} and outputs the results to a file
+npts:=400;
+Seed := randomize():
+
+
+dimList:=[4,4,4];
+
+ GenericPoint:=proc(m1,m2,m3)
+  local i1,i2,i3,roll,generic;
+  roll:=rand(-10..10):
+  generic:={}:
+   for i3 to m3 do for i2 to m2 do for i1 to m1 do
+    generic:= generic union {Z[[i1-1,i2-1,i3-1]] = roll()}:
+   od:od:od:
+  return generic:
+  end proc:
+
+ randRankOne:=proc(m1,m2,m3)
+  local a,b,c,i1,i2,i3, roll, seg;
+  roll:=rand(-10..10): seg:=0;
+  for i1 to m1 do a[i1] := roll(); od:
+  for i2 to m1 do b[i2] := roll(); od:
+  for i3 to m1 do c[i3] := roll(); od:
+  for i3 to m3 do for i2 to m2 do for i1 to m1 do
+    seg:= seg + C[[i1-1,i2-1,i3-1]] * a[i1]*b[i2]*c[i3];
+  od:od:od:
+  return seg;
+ end proc:
+
+ptToRules := proc(pt, m1,m2,m3) local i1,i2,i3, rule;
+ rule := {};
+ for i3 to m3 do for i2 to m2 do for i1 to m1  do
+  rule := rule union{Z[[i1-1,i2-1,i3-1]] = coeff(pt, C[[i1-1,i2-1,i3-1]])};
+ od;od;od;
+end proc:
+
+
+
+fd:=fopen("data_pts.txt",WRITE):
+ for i from 1 to npts do
+ fprintf(fd,"generic[%a] := %a: \n ",i, GenericPoint(4,4,4));
+
+
+ tmpa1 :=randRankOne(op(dimList)):
+ tmpa2 :=randRankOne(op(dimList)):
+ tmpa3 :=randRankOne(op(dimList)):
+ tmpa4 :=randRankOne(op(dimList)):
+ tmpa5 :=randRankOne(op(dimList)):
+ tmpa6 :=randRankOne(op(dimList)):
+ sec4[i] := ptToRules( tmpa1 + tmpa2 + tmpa3 + tmpa4 , op(dimList)):
+ fprintf(fd,"sec4[%a] := %a: \n ",i, % );
+ sec5[i] := ptToRules( tmpa1 + tmpa2 + tmpa3 + tmpa4 + tmpa5, op(dimList)):
+ fprintf(fd,"sec5[%a] := %a: \n ",i, % );
+ sec6[i] := ptToRules( tmpa1 + tmpa2 + tmpa3 + tmpa4 + tmpa5 + tmpa6, op(dimList)):
+ fprintf(fd,"sec6[%a] := %a: \n ",i, % );
+ od:
+fclose(fd):
+
+quit;
