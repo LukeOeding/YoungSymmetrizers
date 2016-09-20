@@ -1,0 +1,193 @@
+interface(quiet=true);
+#interface(rtablesize=50); 
+Seed:=randomize();
+kernelopts(printbytes=false);
+myDeg:=8;
+place:=1:
+fillFile:=cat("fillings.",myDeg,".",place):
+pointsFile:=cat("points.",myDeg,".",place):
+LinIndFile:=cat("LinIndMat.",myDeg,".",place):
+EvalFile:=cat("EvalMat.",myDeg,".",place):
+resultsFile:=cat("results.",myDeg,".",place):
+PDimList:=[2,2,2,2]:
+m2file:=cat("for_M2.",myDeg,".",place):
+read("BasicFunctions.mws");
+
+BigList:={op(mults(myDeg,4,3))}:
+
+GoodFillings:=Array([seq(0,i=1..BigList[place][1])]):
+read(fillFile):
+#print(GoodFillings);
+
+firstN4Test:=proc(MM)
+  local  mm, SX, L1, L2, L3,L4, LL, XX, YY, ZZ,WW, W, T, i, x, y, z,w,kk, TIME,startRank,isNew, tmpRank,
+  ttemp, rrank,s,p, h,g, deg, ss, LLL, FFill, modList, NullEval, xrand, yrand, zrand, wrand, fd, LinIndCol, EvalCol, UsedList;
+global GoodFillings, LinIndMat, EvalMat;
+
+printf("testing %a \n", MM);
+    mm:=MM[1]: 
+    SX:=op(2,MM):
+    L1:=op(1,op(1,SX)):
+    L2:=op(1,op(2,SX)):
+    L3:=op(1,op(3,SX)):
+    L4:=op(1,op(4,SX)):
+    LL:=[seq(op(1,op(j,SX)),j=1..4)]:
+    deg:= `+`(seq(L1[i],  i=1..nops(L1)));  #compute the degree for this term.
+
+XX:=FillLists(L1):xrand:=rand(1..nops(XX)):
+YY:=FillLists(L2):yrand:=rand(1..nops(YY)):
+ZZ:=FillLists(L3):zrand:=rand(1..nops(ZZ)):
+WW:=FillLists(L4):wrand:=rand(1..nops(WW)): #shuffle the loop so that you can hope to randomly find good fillings more quickly
+
+  if mm=1 then #print("multiplicity 1 test"):
+    ttemp:=false:
+    while ttemp=false do
+      W :=[XX[xrand()],YY[yrand()],ZZ[zrand()],WW[wrand()]]:
+      if ttemp=false then
+        T:=makeUnsymmetric(LL,[W[1],W[2],W[3],W[4]]):
+        ttemp:=testnonzero(T);
+        if ttemp=true then
+        quadpoint||1:=quadrifocal:
+        pointinit():
+        quadpoint||2:=quadrifocal:
+            FFill:=[seq(W[j],j=1..4) ]: 
+         fd:=fopen(pointsFile,WRITE):
+         fprintf(fd,"points:=%a;\n",[quadpoint1,quadpoint2]);
+         fclose(fd):
+
+         fd:=fopen(fillFile,WRITE):
+         fprintf(fd,"Shape:=%a;\n FFill:= %a;\n",LL,FFill);
+         fclose(fd):
+            T:=makeUnsymmetric(LL,FFill):
+            if evalunfactor(T,deg,PDimList,quadpoint1)=0 and evalunfactor(T,deg,PDimList,quadpoint2)=0 then
+            return [S[LL],[Fff[FFill]]]:
+	    else return NULL;
+            fi:         
+        fi:
+      fi;
+    od:
+  fi:
+
+    if mm>1 then #print("higher multiplicity test"):
+ LinIndMat:=Matrix(mm+10,mm,0): # add in more points to try to decrease random coincidences 
+
+fd:=fopen(pointsFile,WRITE): #load points into memory and store the results for verification
+ for p from 1 to mm+10 do 
+  pointinit(): 
+  testpoint||p :=generic: 
+  fprintf(fd,"testpoint%a:=%a;\n",p,testpoint||p);
+  quadpoint||p:=quadrifocal:
+  fprintf(fd,"quadpoint%a:=%a;\n",p,quadpoint||p);
+ od: 
+fclose(fd):
+
+UsedList:={};
+TIME:=time[real]();
+rrank:=0: 
+startRank:=0:
+for g from 1 to mm do if GoodFillings[g]<>0 then 
+ startRank := g; 
+ T||g:=makeUnsymmetric(LL,GoodFillings[g]);
+ UsedList:=`union`(UsedList,{T||g});
+fi; od;
+rrank:=startRank;
+printf("StartRank = %a\n",startRank);
+if rrank <>mm then
+LinIndMat[1..mm+10,1..startRank]:= Matrix([Threads[Seq]([Threads[Seq](evalunfactor(T||g,deg,PDimList,testpoint||p),g=1..startRank)], p=1..mm+10)]); print(LinIndMat);
+fi;
+     while rrank<mm do
+ isNew:=false: # don't ever try the same input twice
+ while isNew=false do
+  W :=[XX[xrand()],YY[yrand()],ZZ[zrand()],WW[1]]: printf("rrank = %a, testing W=%a\n", rrank, W);  #changed wrand() to 1 to perhaps decrease randomness in a good way
+  if not member(W,UsedList) then isNew :=true; UsedList:=`union`(UsedList,{W}); fi;
+  printf("UsedList has %a entries. ", nops(UsedList));	
+ od;
+        if rrank<mm then
+          GoodFillings[rrank+1]:=W; 
+          T:=makeUnsymmetric(LL,W):
+           y:=evalunfactor(T,deg,PDimList,testpoint1); 
+           if y <>0 then
+           LinIndMat[1,rrank+1]:=y:
+
+LinIndMat[2..mm+10,rrank+1]:= Matrix([Threads[Seq]([evalunfactor(T,deg,PDimList,testpoint||p)], p=2..mm+10)]); 
+tmpRank:=Rank(LinIndMat);
+            if tmpRank>rrank then 
+             fd:=fopen(fillFile,WRITE):
+             fprintf(fd,"Shape:=%a;\n", LL);
+             for i to mm do
+               fprintf(fd, "GoodFillings[%a]:=%a:\n", i,GoodFillings[i]);
+             od;
+             fclose(fd):
+rrank:=tmpRank:            
+           fi: 
+          fi:
+        fi;
+      od:
+     printf("random search took %a s\n", time[real]()-TIME);
+
+     EvalMat:=Matrix(mm+10,mm, 0):
+   TIME:=time[real]():
+   for g from 1 to mm do # this goes over which filling to use
+     T||g:=makeUnsymmetric(LL,GoodFillings[g]);
+   od:
+ EvalMat:=Matrix([Threads[Seq]([Threads[Seq](evalunfactor(T||g,deg,PDimList,quadpoint||p), g=1..mm)], p=1..mm+10)]); 
+printf("Seq-Seq evaluation took %a s\n", time[real]()-TIME);
+       TIME:=time[real]():
+       NullEval:=NullSpace(EvalMat): 
+printf("NullSpace computation took %a s\n",time[real]()-TIME);
+
+#TIME:=time[real]():
+#for g from 1 to mm do 
+#   for p from 1 to mm+10 do # this goes over which point to plug in
+#     EvalMat[p,g]:=evalunfactor(makeUnsymmetric(LL,GoodFillings[g]),deg,PDimList,quadpoint||p); 
+#     od;
+#    od;
+#printf("For-loop evaluation took %a s\n", time[real]()-TIME);
+#       NullEval:=NullSpace(EvalMat):
+ 
+       if NullEval<>{} then 
+          printf("found %a \n\n", [S[LL],[seq(Fff[seq(GoodFillings[s][j],j=1..4) ],s=1..rrank)],NullEval]): 
+          return [S[LL],[seq(Fff[seq(GoodFillings[s][j],j=1..4) ],s=1..rrank)],NullEval]:
+        else return NULL; 
+        fi:
+     fi:
+end:
+
+
+M2Prep:=proc(mylist)
+ local x, mm, m, p, S;
+if mylist<>{} then
+  for x in mylist do
+  if x <> [] then
+  S:=op(op(1,x));
+  mm:=x[nops(x)]:  #kernel
+  m:=nops(mm): #dim kernel
+   fprintf(fd,"%a *s_(%a)*t_(%a)*u_(%a)*v_(%a)  \n",m,S[1],S[2],S[3],S[4]);
+  fi;
+ end do:
+fi;
+end:
+
+interface(quiet=false);
+ 
+TIME:=time[real]():
+results:={};
+results:={firstN4Test(BigList[place])};
+fd:=fopen(resultsFile,WRITE):
+if results<>0 then
+fprintf(fd, "%a", results);
+else
+fprintf(fd, "%a",0);
+fi;
+fclose(fd):
+
+if results<>{} then
+ fd:=fopen(m2file,WRITE):
+  M2Prep(results);
+ fclose(fd):
+fi;
+ time[real]()-TIME;
+ printf("this step took %a s \n\n", time[real]()-TIME);
+
+
+quit;

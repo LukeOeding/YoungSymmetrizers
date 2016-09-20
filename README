@@ -1,0 +1,22 @@
+README
+
+The file BasicFunctions.mws contains tools that will be used in each successive computation.
+
+Many identical copies of input.mws are created by the shell script cpBig.sh.
+The script sedBig.sh changes the copy of input.mws to a new value for the place in the loop, which corresponds to a different isotopic component to be computed.
+The file input.mws is called via the shell script execute_maple.sh and sends the file to a different instance of maple for each place in the loop. 
+
+The output files can be quite large (up to 32MB in the largest degree 8 cases), so we omit them here. However, we do report the fillings of the tableaux for each module in the isotypic decomposition.
+
+The filling files give the shape of the module together with a list of fillings that produce linearly independent Young symmetrizers.
+
+The "for_m2" files give the list of modules that occurred in the ideal of the quadrifocal variety up to the S_4 symmetry.  
+
+The files F5_out, F6_out, etc. contain the full list of modules in each degree, not reduced by the S_4 symmetry. 
+
+For degree 9, the isotopic components that were not fully computed are indexed by the following:
+1157, 1159, 1160, 1162, 1163, 1164, 1165, 1166, 1167, 1168, 1169, 1170, 1171, 1172, 1173, 1174, 1175, 1176, 1177, 1178, 1179, 1180, 1181, 1182, 1183, 1184, 1185, 1186, 1187, 1188, 1189, 1190, 1191, 1192, 1193, 1194, 1195, 1196, 1197, 1198, 1199, 1200, 1201, 1202, 1203, 1204, 1205
+
+quad_conversion.mws unsymmetrizes the resulting modules and converts the list of modules to a macaulay2 readable format.
+
+Quadrifocal_to_deg_9_SchurRings.m2 performs the SchurRings computations in Macaulay2. It reads the file quad_Schur_data.m2.
