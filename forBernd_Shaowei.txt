@@ -1,0 +1,194 @@
+restart:with(combinat):with(LinearAlgebra):
+read "/Users/oeding/big2";
+
+monoweight := proc (X) local K, Y; 
+description "The following two procedures compute the additive weight of a given expression.  First I consider only monomials and then I expand to handle more complicated expressions.";
+
+if type(op(1, X), list) then K := op(1, X); return [seq(K[i], i = 1 .. nops(K))]  
+ elif type(op(1, X), integer) then return X 
+ else return "bad imput" 
+end if 
+
+end proc; 
+
+weight := proc (X) local i, S, Y, WP, count; 
+description "The following two procedures compute the additive weight of a given expression.  First I consider only monomials and then I expand to handle more complicated expressions.  Further, this only considers the first monomial in a polynomial and assumes that each monomial has the same weight."; 
+
+if op(0, X) = `+` then Y := op(1, expand(X)) else Y := X end if; 
+
+count := 1; 
+
+if op(0, Y) = `*` then 
+for i to nops(Y) do 
+ if not type(op(i, Y), integer) then 
+  if type(op(i, Y), atomic) then S[count] := monoweight(op(i, Y)); count := count+1 
+  end if; 
+  if op(0, op(i, Y)) = `^` then S[count] := monoweight(op(1, op(i, Y)))*op(2, op(i, Y));     
+  count := count+1 
+ end if 
+ end if 
+end do; 
+
+if 2 <= count then 
+ WP := S[1]; for i from 2 to count-1 do WP := WP+S[i] 
+  end do end if; return WP 
+  elif type(X, atomic) then return monoweight(X) 
+  elif op(0, X) = `^` then return monoweight(op(1, X))*op(2, X) 
+ end if 
+end proc;
+
+
+weight(Z[[1,3,1,1]]*Z[[1,3,1,1]]);
+raise := proc (x, f) 
+local temp, i, j, k; 
+description "this procedure raises the vector x in the f th factor (limited to 3 factors right now) and lowers the p th coordinate."; 
+temp := 0; 
+if f = 1 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[0, i, j, k]]))*Z[[1, i, j, k]] 
+ end do end do end do;
+elif f = 2 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, 0, j, k]]))*Z[[i, 1, j, k]] 
+ end do end do end do;
+elif f = 3 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, j, 0, k]]))*Z[[i, j, 1, k]] 
+ end do end do end do;
+elif f = 4 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, j, k, 0]]))*Z[[i, j, k, 1]] 
+ end do end do end do;
+end if; 
+return expand(temp) end proc:
+
+lower := proc (x, f) 
+local temp, i, j, k; 
+description "this procedure raises the vector x in the f th factor (limited to 3 factors right now) and lowers the p th coordinate."; 
+
+temp := 0; 
+if f = 1 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[1, i, j, k]]))*Z[[0, i, j, k]] 
+ end do end do end do;
+elif f = 2 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, 1, j, k]]))*Z[[i, 0, j, k]] 
+ end do end do end do;
+elif f = 3 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, j, 1, k]]))*Z[[i, j, 0, k]] 
+ end do end do end do;
+elif f = 4 then 
+ for i from 0 to 1 do for j from 0 to 1 do for k from 0 to 1 do
+  temp := temp+(diff(expand(x), Z[[i, j, k, 1]]))*Z[[i, j, k, 0]] 
+ end do end do end do;
+end if; 
+
+return expand(temp) end proc:
+varschange:=seq(seq(seq(seq( cat(cat(cat(cat(x,i),j),k),l) = Z[[i,j,k,l]],i=0..1),j=0..1),k=0..1),l=0..1);
+
+varschangeback:=seq(seq(seq(seq( Z[[i,j,k,l]] = cat(cat(cat(cat(x,i),j),k),l) ,i=0..1),j=0..1),k=0..1),l=0..1);
+
+with(linalg); 
+sqtest := proc (f) local A, para, paraZ; 
+
+A := randmatrix(4, 4); 
+
+para := {x1111 = det(submatrix(A, [1, 2, 3, 4], [1, 2, 3, 4])), x1110 = det(submatrix(A, [1, 2, 3], [1, 2, 3])), x1101 = det(submatrix(A, [1, 2, 4], [1, 2, 4])), x1011 = det(submatrix(A, [1, 3, 4], [1, 3, 4])), x0111 = det(submatrix(A, [2, 3, 4], [2, 3, 4])), x1100 = det(submatrix(A, [1, 2], [1, 2])), x1010 = det(submatrix(A, [1, 3], [1, 3])), x1001 = det(submatrix(A, [1, 4], [1, 4])), x0110 = det(submatrix(A, [2, 3], [2, 3])), x0101 = det(submatrix(A, [2, 4], [2, 4])), x0011 = det(submatrix(A, [3, 4], [3, 4])), x0001 = det(submatrix(A, [4], [4])), x0010 = det(submatrix(A, [3], [3])), x0100 = det(submatrix(A, [2], [2])), x1000 = det(submatrix(A, [1], [1])), x0000 = 1}; 
+
+paraZ := subs(varschange, para); return subs(paraZ, f) 
+
+end proc;
+
+read "/Users/oeding/big2";
+
+nops(F);
+
+FZ:=subs(varschange,F):nops(%);sqtest(FZ);
+GZ:=subs(varschange,G):nops(%);sqtest(GZ);
+HZ:=subs(varschange,H):nops(%);sqtest(HZ);
+weight(FZ);
+lower(FZ,4):nops(%);
+Hmodule[0]:=HZ:
+for i from 1 to 6 do 
+ raise(Hmodule[i-1],1): if %<>0 then Hmodule[i]:=%:print(weight(%)); fi:
+od:
+seq(nops(Hmodule[i]),i=0..6);
+seq(sqtest(Hmodule[i]),i=0..6);
+
+c:=1:
+Gmodule[0,0]:=GZ:
+for i from 1 to 4 do 
+ raise(Gmodule[i-1,0],1): if %<>0 then Gmodule[i,0]:=%:print(weight(%),[c]);c:=c+1: fi:
+od:
+
+for i from 0 to 4 do for j from 1 to 4 do
+ raise(Gmodule[i,j-1],2): if %<>0 then Gmodule[i,j]:=%:print(weight(%),[c]); c:=c+1: fi:
+od:od:
+c;
+seq(seq(nops(Gmodule[i,j]),i=0..4),j=0..4);
+seq(seq(sqtest(Gmodule[i,j]),i=0..4),j=0..4);
+
+c:=0:
+for i from 0 to 4 do for j from 0 to 2 do for k from 0 to 2 do for l from 0 to 2 do
+Fmodule[i,j,k,l]:=0:c:=c+1:
+od:od:od:od:
+c;
+
+c:=1:
+Fmodule[0,0,0,0]:=FZ:
+for i from 1 to 4 do 
+ raise(Fmodule[i-1,0,0,0],1): if %<>0 then Fmodule[i,0,0,0]:=%:print(weight(%),[c]); c:=c+1: fi:
+od:
+
+for i from 0 to 4 do for j from 1 to 2 do 
+ raise(Fmodule[i,j-1,0,0],2): if %<>0 then Fmodule[i,j,0,0]:=%:print(weight(%),[c]); c:=c+1: fi:
+od: od:
+
+for i from 0 to 4 do for j from 0 to 2 do for k from 1 to 2 do
+ raise(Fmodule[i,j,k-1,0],3): if %<>0 then Fmodule[i,j,k,0]:=%:print(weight(%),[c]); c:=c+1: fi:
+od: od: od:
+
+for i from 0 to 4 do for j from 0 to 2 do for k from 0 to 2 do for l from 1 to 2 do
+ raise(Fmodule[i,j,k,l-1],4): if %<>0 then Fmodule[i,j,k,l]:=%:print(weight(%),[c]); c:=c+1: fi:
+od: od: od:od:
+
+seq(seq(seq(seq(nops(Fmodule[i,j,k,l]),i=0..4),j=0..2),k=0..2),l=0..2);
+seq(seq(seq(seq(sqtest(Fmodule[i,j,k,l]),i=0..4),j=0..2),k=0..2),l=0..2);
+subs(varschangeback,Fmodule[1,1,1,1]):op(1,%);
+for i from 0 to 4 do for j from 0 to 2 do for k from 0 to 2 do for l from 0 to 2 do
+xFmodule[i,j,k,l]:=subs(varschangeback,Fmodule[i,j,k,l]):
+od:od:od:od:
+
+for i from 0 to 4 do for j from 0 to 4 do
+xGmodule[i,j]:=subs(varschangeback,Gmodule[i,j]):
+od:od:
+
+
+for i from 0 to 6 do 
+xHmodule[i]:=subs(varschangeback,Hmodule[i]):
+od:
+
+
+
+fd := fopen("big2xbasis", APPEND): 
+c:=1:
+for i from 0 to 4 do for j from 0 to 2 do for k from 0 to 2 do for l from 0 to 2 do
+fprintf(fd, "F[%a] =  %a : \n\n", c, xFmodule[i,j,k,l]):
+c:=c+1: 
+od:od:od:od:
+
+c:=1:
+for i from 0 to 4 do for j from 0 to 4 do
+fprintf(fd, "G[%a] =  %a : \n\n", c, xGmodule[i,j]):
+c:=c+1: 
+od:od:
+
+c:=1:
+for i from 0 to 6 do 
+fprintf(fd, "H[%a] =  %a : \n\n", c, xHmodule[i]):
+c:=c+1: 
+od:
+
+fclose(fd):
