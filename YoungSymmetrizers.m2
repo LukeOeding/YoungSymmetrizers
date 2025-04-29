@@ -93,9 +93,9 @@ restart
 -- using auxillary variables a_(i,d), b_(j,d), c_(k,d)
 -- the polynomial is the 3x3x3 degree 9 Strassen Invariant
 (dg, aa, bb, cc) = (9,2,2,2);-- degree of the invariant, the projective dimensions of the spaces
-Ra = QQ[a_(0,0)..a_(aa,dg-1)] -- ring on  A times CC^d 
-Rb = QQ[b_(0,0)..b_(bb,dg-1)] -- ring on  B times CC^d 
-Rc = QQ[c_(0,0)..c_(cc,dg-1)] -- ring on  C times CC^d 
+Ra = QQ[a_(0,0)..a_(aa,dg-1)] -- ring on A times CC^d 
+Rb = QQ[b_(0,0)..b_(bb,dg-1)] -- ring on B times CC^d 
+Rc = QQ[c_(0,0)..c_(cc,dg-1)] -- ring on C times CC^d 
 Rx = QQ[x_(0,0,0)..x_(aa,bb,cc)] -- ring on A \otimes B\otimes C
 R = Ra**Rb**Rc**Rx  -- big ring -- Later we compare to subsequent ring extensions instead of tensor product
 -- the following matrices should have their column indices be determined by the 

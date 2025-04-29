@@ -1,7 +1,6 @@
+restart
 highestWeight = (tab1,tab2,tab3) -> (
-(dg, aa, bb, cc) = (length flatten tab1, length tab1_0 ,length tab2_0 ,length
-tab3
-_0);
+(dg, aa, bb, cc) = (length flatten tab1, length tab1_0 ,length tab2_0 ,length tab3_0);
 print("---dg---");
 print(dg);
 Rx := QQ[x_(1,1,1)..x_(aa,bb,cc)];
@@ -11,11 +10,9 @@ listRa = {};
 for i from 1 to length tab1 list (
 if i > 1 then (
 listRa = listRa | {(last listRa)[flatten apply(length tab1_(i-1), k->
-apply(tab1_(i-1), j-> a_(k+1,j)))]}
 )
-else (
-a
-_(k+1,j)))]}
+apply(tab1_(i-1), j-> a_(k+1,j)))]}
+else (a_(k+1,j)))]}
 listRa = listRa | {Rx[flatten apply(length tab1_(i-1), k-> apply(tab1_(i-1), j->
 )
 );

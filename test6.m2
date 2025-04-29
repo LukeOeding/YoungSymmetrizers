@@ -12,14 +12,14 @@ B1= matrix apply(3,i -> apply({0,3,6}, j-> b_(i,j) ));B2= matrix apply(3,i -> ap
 C1= matrix apply(3,i -> apply({0,3,5}, j-> c_(i,j) ));C2= matrix apply(3,i -> apply({1,4,6}, j-> c_(i,j) ));C3= matrix apply(3,i -> apply({2,7,8}, j-> c_(i,j) ));
 myList = flatten flatten apply(aa+1, i-> apply(bb+1, j-> apply(cc+1, k-> {i,j,k}  )));
 tmp = ()->(
-time T1 =det(A1)*det(B1)*det(B2)*det(B3)*det(C1)*det(C2)*det(C3); -- 3.85s
-F=T1; time for d from 0 to 2 do F = sum(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F));--62s
-time F = det(A2)*F;--6.3s
-time for d from 3 to 5 do F = sum(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 223.59s
-time F = det(A3)*F; --6.3s
+time T1 =det(A1)*det(B1)*det(B2)*det(B3)*det(C1)*det(C2)*det(C3); -- 1.38s
+F=T1; time for d from 0 to 2 do F = sum(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F));--27s
+time F = det(A2)*F;--6.2.3s
+time for d from 3 to 5 do F = sum(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 96.6s
+time F = det(A3)*F; --2.1s
 time for d from 6 to 8 do F = sum(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 130s
 F
 )
-elapsedTime strassen9 = tmp();  --
+elapsedTime strassen9 = tmp();  --195s
 #terms F
 det(A1)*det(B1)
