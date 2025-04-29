@@ -99,7 +99,7 @@ F=F9;
 for dg to 8 do( time F = sum(3, i-> sum(3, j-> sum(3, k-> x_(i,j,k)* Ldiff({k,dg},tab3ss,c,Ldiff({j,dg},tab2ss,b,Ldiff({i,dg},tab1ss,a,F)))))); print(#terms F))
 
 
-R0= QQ[x_(0,0,0)..x_(2,2,2)];
+R0= QQ[x_(0,0,0)..x_(2,2,2)];--- this way seems the fastest, but it doesn't beat just using the determinants...
 RA = R0[a_(0,0)..a_(3,8),flatten flatten apply({2,3}, k-> apply(subsets(3,k), L->apply(subsets(9,k), M-> a_(L,M)  )))];
 for i to 3 do for j to 8 do a_({i},{j}) = a_(i,j);
 RB = RA[b_(0,0)..b_(3,8),flatten flatten apply({2,3}, k-> apply(subsets(3,k), L->apply(subsets(9,k), M-> b_(L,M)  )))];
@@ -137,8 +137,10 @@ f1 = tab2det(tab1, a);
 f2 = tab2det(tab2, b);
 f3 = tab2det(tab3, c);
 F9 = f1*f2*f3;
-Ldiff({0,0},tab1ss,a,f1)
 
 F9;#terms oo
 F=F9;
 for dg to 8 do( time F = sum(3, i-> sum(3, j-> sum(3, k-> x_(i,j,k)* Ldiff({k,dg},tab3ss,c,Ldiff({j,dg},tab2ss,b,Ldiff({i,dg},tab1ss,a,F)))))); print( #terms F))
+F
+RX = QQ[x_(0,0,0)..x_(2,2,2)];
+#terms sub(F,RX)

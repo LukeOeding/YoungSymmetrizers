@@ -1,0 +1,130 @@
+highestWeight = (tab1,tab2,tab3) -> (
+(dg, aa, bb, cc) = (length flatten tab1, length tab1_0 ,length tab2_0 ,length
+tab3
+_0);
+print("---dg---");
+print(dg);
+Rx := QQ[x_(1,1,1)..x_(aa,bb,cc)];
+print(Rx);
+genMat := (Rg, a,b) -> value toString transpose genericMatrix(Rg,Rg_0, a,b);
+listRa = {};
+for i from 1 to length tab1 list (
+if i > 1 then (
+listRa = listRa | {(last listRa)[flatten apply(length tab1_(i-1), k->
+apply(tab1_(i-1), j-> a_(k+1,j)))]}
+)
+else (
+a
+_(k+1,j)))]}
+listRa = listRa | {Rx[flatten apply(length tab1_(i-1), k-> apply(tab1_(i-1), j->
+)
+);
+print("---space---");
+print(listRa);
+print(genMat(listRa_0, length tab1_0,length tab1_0));
+-- print("---space---");
+-- print(genMat(listRa_1, length tab1_1, length tab1_1));
+detListA = {};
+for i from 0 to ((length listRa) -1) do (
+detListA = detListA | {det(genMat(listRa_i, length tab1_i,length tab1_i))}
+);
+print("---det---");
+print(detListA);
+prodDetA = product detListA;
+print("---product---");
+print(prodDetA);
+listRb = {};
+for i from 1 to length tab2 list (
+if i > 1 then (
+listRb = listRb | {(last listRb)[flatten apply(length tab2_(i-1), k->
+apply(tab2_(i-1), j-> b_(k+1,j)))]}
+)
+else (
+listRb = listRb | {(last listRa)[flatten apply(length tab2_(i-1), k->
+apply(tab2_(i-1), j-> b_(k+1,j)))]}
+)
+);
+print("---space---");
+print(listRb);
+print(genMat(listRb_0, length tab2_0,length tab2_0));
+-- print("---space---");
+-- print(genMat(listRb_1, length tab2_1, length tab2_1));
+detListB = {};
+for i from 0 to ((length listRb) -1) do (
+detListB = detListB | {det(genMat(listRb_i, length tab2_i,length tab2_i))}
+);
+print("---det---");
+print(detListB);
+prodDetB = product detListB;
+print("---product---");
+print(prodDetB);
+listRc = {};
+for i from 1 to length tab3 list (
+if i > 1 then (
+listRc = listRc | {(last listRc)[flatten apply(length tab3_(i-1), k->
+apply(tab3_(i-1), j-> c_(k+1,j)))]}
+)
+else (
+listRc = listRc | {(last listRb)[flatten apply(length tab3_(i-1), k->
+apply(tab3_(i-1), j-> c_(k+1,j)))]}
+)
+);
+print("---space---");
+print(genMat(listRc_0, length tab3_0,length tab3_0));
+-- print("---space---");
+detListC = {};
+for i from 0 to ((length listRc) -1) do (
+detListC = detListC | {det(genMat(listRc_i, length tab3_i,length tab3_i))}
+);
+print("---det---");
+print(detListC);
+prodDetC = product detListC;
+print("---product---");
+print(prodDetC);
+limitTab := (d,tab) -> (
+for item in tab do (
+if (isMember(d,item)) then (
+return {length item, position(tab,i->i==item)}
+)
+)
+);
+F1 = 1;
+templistA={};
+templistB={};
+templistC={};
+for d from 1 to dg do (
+Lc:=limitTab(d,tab3);
+Lb:=limitTab(d,tab2);
+La:=limitTab(d,tab1);
+La1:=La
+_1;
+Lb1:=Lb
+_1;
+Lc1:=Lc
+_1;
+if (isMember(La1,templistA)==false) then (
+F1=F1*detListA
+_La1;
+templistA=templistA|{La1});
+if(isMember(Lb1,templistB)==false) then (
+F1=F1*detListB
+_Lb1;
+templistB=templistB|{Lb1} );
+if (isMember(Lc1,templistC)==false) then (
+F1=F1*detListC
+_Lc1;
+templistC=templistC|{Lc1} );
+F1 = sum(Lc_0,k-> sum(Lb_0, j-> sum(La_0,i-
+>x
+_(i+1,j+1,k+1)*diff(a_(i+1,d)*b_(j+1,d)*c_(k+1,d),F1))));
+);
+print("---F1---");
+print(F1);
+)
+tab1 = {{1,2}, {3,4}}
+tab2 = {{1,2}, {3,4}}
+tab3 = {{1,3}, {2,4}}
+highestWeight(tab1,tab2,tab3)
+tab1 = {{1,2,3},{4,5,6},{7,8,9}}
+tab2 = {{1,4,7},{2,5,8},{3,6,9}}
+tab3 = {{1,4,6},{2,5,7},{3,8,9}}
