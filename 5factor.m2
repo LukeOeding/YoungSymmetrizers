@@ -29,7 +29,7 @@ tab2poly = (ta,tb,tc,td,te)->(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
         F = F*T;
         time F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
-    );
+    ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
     sub(F,X)
 )
 
