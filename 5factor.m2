@@ -12,7 +12,8 @@ cycle3 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->ap
 cycle4 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i5,i1,i2,i3,i4) ) ) ) )) );
 swap = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i2,i1,i3,i4,i5) ) ) ) )) );
 list2mats = (L,a) -> matrix apply(2, i-> apply( L, j-> a_(i,j-1)))
-tab2poly = (ta,tb,tc,td,te)->(
+tab2poly = (L)->(
+    ta:=L#0; tb:=L#1;tc:=L#2;td:=L#3;te:=L#4;
     dg := length flatten ta;
     R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
     A := apply(ta, L -> list2mats(L, a));
