@@ -1,10 +1,11 @@
 ---Young Symmetrizers  -- with tensor product rings, and one partial evaluation trick
 -- the polynomial is the 3x3x3 degree 9 Strassen Invariant
 --restart -- input"5factor.m2"
-X = QQ[x_(0,0,0,0,0)..x_(1,1,1,1,1)]
+KK = ZZ/101;
+X = KK[x_(0,0,0,0,0)..x_(1,1,1,1,1)]
 primaryInvariants = {};
-rndPt = () -> map(QQ, X, random(QQ^1, QQ^(numgens X))) 
-rndPt()
+rndPt = () -> map(KK, X, random(KK^1, KK^(numgens X))) 
+rp = rndPt()
 cycle = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i2,i3,i4,i5,i1) ) ) ) )) );
 cycle2 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i3,i4,i5,i1,i2) ) ) ) )) );
 cycle3 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i4,i5,i1,i2,i3) ) ) ) )) );
@@ -28,106 +29,37 @@ tab2poly = (ta,tb,tc,td,te)->(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
         F = F*T;
-        F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
+        time F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
     ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
     sub(F,X)
 )
+-- reuse the variables, just set the pair to the first variable.
 
-tab2polyList = (ta,tb,tc,td,te,L)->(
-    dg := length flatten ta;
-    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
-    A := apply(ta, L -> list2mats(L, a));
-    B := apply(tb, L -> list2mats(L, b));
-    C := apply(tc, L -> list2mats(L, c));
-    D := apply(td, L -> list2mats(L, d));
-    E := apply(te, L -> list2mats(L, e));
-    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
-    F :=1_R; T :=1_R;
-    for z in L do ( T=product(
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
-        print( {usedA,usedB,usedC,usedD,usedE});
-        F = F*T;
-        F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
-    ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
-    sub(F,X)
-)
-
-
-parallelSum = (X, f, result) -> (
-    mutex := new AtomicInt;
-    T := apply(X, x -> schedule(() -> (
-        y := f x;
-        while(exchange(mutex, 1) == 1) do null;
-        result += y;
-        store(mutex, 0))));
-    while not all(T, isReady) do null;
-    result)
-
-sumList = flatten flatten flatten flatten apply(2,m-> apply(2, l-> apply(2,k-> apply(2, j-> apply(2,i->{i,j,k,l,m})))))
-
-tab2polySeq = (ta,tb,tc,td,te)->(
-    dg := length flatten ta;
-    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
-    A := apply(ta, L -> list2mats(L, a));    B := apply(tb, L -> list2mats(L, b));    C := apply(tc, L -> list2mats(L, c));
-    D := apply(td, L -> list2mats(L, d));    E := apply(te, L -> list2mats(L, e));
-    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
-    F :=1_R;T :=1_R;
-    Xmat = transpose matrix {flatten flatten flatten flatten( apply(2, i-> apply(2, j-> apply(2, k-> apply(2, l-> apply(2, m-> x_(i,j,k,l,m)))))))};
-    for z to dg-1 do time ( T=product(
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
-        F= F*T; -- check if it's faster to do a for loop with intermediate values stored:
-        --dl = diff(matrix {flatten flatten flatten flatten( apply(2, i-> a_(i,z))*apply(2, j-> b_(j,z))*apply(2, k-> c_(k,z))*apply(2, l-> d_(l,z))*apply(2, m-> e_(m,z)))}, F); -- diff(matrix,poly) is 5x faster than apply(list, diff poly)?
-        -- dle = diff(matrix {apply(2, m-> e_(m,z))}, F);
-        -- dld = diff(matrix {apply(2, m-> d_(m,z))}, dle);
-        -- dlc = diff(matrix {apply(2, m-> c_(m,z))}, dld);
-        -- dlb = diff(matrix {apply(2, m-> b_(m,z))}, dlc);
-        -- dl = diff(matrix {apply(2, m-> a_(m,z))}, dlb);
-        -- F = trace(dl*Xmat);
-          abcdeMat = matrix {flatten flatten flatten flatten( apply(2, i-> apply(2, j-> apply(2, k-> apply(2, l-> apply(2, m->a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z)))))))};
-        --F = parallelSum(sumList, L-> x_(L#0,L#1,L#2,L#3,L#4)*diff(a_(L#0,z)*b_(L#1,z)*c_(L#2,z)* d_(L#3,z)*e_(L#4,z), F),0_R);
-        F = trace( diff(abcdeMat, F)*Xmat);
-    ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
-    sub(F,X)
-)
-
+--- points 
+gx = gens X
+pseudoCartan = apply(16,i-> gx_(31-i) => gx_i)
+randomLine = apply(32,i-> gx_(i) => random(KK)*gx_0 + random(KK)*gx_15+ random(KK)*gx_31)
+randomPoint = apply(32,i-> gx_(i) => random(KK))
+---  tableaux
 syt4 = {{{1,2},{3,4}},{{1,3},{2,4}}}
-elapsedTime f4 = tab2poly(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1);
-for xx in permutations({0,1,2,3}) do (print(xx); elapsedTime f4 = tab2polyList(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1,xx);)
-elapsedTime f4tmp = tab2polySeq(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1); 
-f4 - f4tmp
+f4 = tab2poly(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1);
 I4 = ideal(f4);
-time I4 = I4 + cycle I4 + cycle2 I4 + cycle3 I4 + cycle4 I4;
 betti mingens I4 -- these are the first 5 primary invariants - but let's do a randomized jacobian to make sure we think they're algebraically independent.
+time I4 = I4 + cycle I4 + cycle2 I4 + cycle3 I4 + cycle4 I4;
 J4 = jacobian I4;
 phi = rndPt();
 rank phi J4 -- random rank 5 gives us some confidence that it is rank 5. -- I think: lower bounds are certain, upper bounds are probabilistic
 --time ind4 = det J4^{0..4}; -- if this is not the zero polynomial, then we'd have confirmation that they're actually independent. However it is likely to take foreover. On the other hand, the zero polynomnial doesn't have non-zero values. So we could just evaluate it at random points and if it's not zero, then the rank is 5. That's what the randomized test does. 
 --hilbertFunction(4,I4)
 primaryInvariants = flatten entries gens I4;
-syt6 = {{{1,2},{3,4},{5,6}}, {{1,2},{3,5},{4,6}},{{1,3},{2,4},{5,6}}, {{1,3},{2,5},{4,6}}, {{1,4},{2,5},{3,6}}}
 elapsedTime inv6 = tab2poly(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4); -- 1.09s (tensor product ring) vs .934s (flat ring)
-elapsedTime inv6tmp = tab2polySeq(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4); -- 1.02 =20% faster for parallel sum! 4.4s for diff array
-for xx in permutations({0,1,2,3,4,5}) do (print(xx); elapsedTime tab2polyList(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4,xx);)
-inv6-inv6tmp
 I6 = ideal inv6;
 I = I4+I6;
 J46 = jacobian(I); -- to show that these polynomials are algebraically independent, you could have a general point in their intersection, then compute their Jacobian. 
 rp = rndPt();
 rank rp J46
 primaryInvariants = primaryInvariants|{inv6};
-fill8={{1,2,3,4,5,6,7,8},{1,2,3,4,5,7,6,8},{1,2,3,5,4,6,7,8},{1,2,3,5,4,7,6,8},{1,2,3,6,4,7,5,8},{1,3,2,4,5,6,7,8},{1,3,2,4,5,7,6,8},{1,3,2,5,4,6,7,8},{1,3,2,5,4,7,6,8},{1,3,2,6,4,7,5,8},{1,4,2,5,3,6,7,8},{1,4,2,5,3,7,6,8},{1,4,2,6,3,7,5,8},{1,5,2,6,3,7,4,8}}
 
-m8to2row = L -> {{L#0,L#1}, {L#2,L#3}, {L#4,L#5}, {L#6,L#7}}
-
-syt8 = m8to2row\fill8
 
 elapsedTime inv8 = tab2poly(syt8#0,syt8#0,syt8#2,syt8#9,syt8#12); -- 20s
 elapsedTime inv8tmp = tab2polySeq(syt8#0,syt8#0,syt8#2,syt8#9,syt8#12); -- 22s -- similar
@@ -137,7 +69,6 @@ elapsedTime inv8btmp = tab2polySeq(syt8#0,syt8#2,syt8#3,syt8#12,syt8#13); -- 28.
 elapsedTime inv8c = tab2poly(syt8#0,syt8#0,syt8#12,syt8#12,syt8#12); -- 24s -- not independent of deg 4
 elapsedTime inv8ctmp = tab2polySeq(syt8#0,syt8#0,syt8#12,syt8#12,syt8#12); -- 22.5s -- not independent of deg 4
 elapsedTime inv8d = tab2poly(syt8#0,syt8#3,syt8#6,syt8#9,syt8#13); -- 39s
-elapsedTime inv8dtmp = tab2polySeq(syt8#0,syt8#3,syt8#6,syt8#9,syt8#13); -- 38s
 I8 = ideal{ inv8, inv8c, inv8b,inv8d};  -- leave out inv8c from the non-minimal generators. 
 primaryInvariants = primaryInvariants|{inv8, inv8c, inv8d};
 rank rp jacobian ideal primaryInvariants
@@ -177,12 +108,6 @@ J468 = jacobian(I); -- to show that these polynomials are algebraically independ
 rp = rndPt();
 rank rp J468
 --apply(9, i-> hilbertFunction(i, I))
-
-fill10= {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, {1, 2, 3, 4, 5, 6, 7, 9, 8, 10}, {1, 2, 3, 4, 5, 7, 6, 8, 9, 10}, {1, 2, 3, 4, 5, 7, 6, 9, 8, 10}, {1, 2, 3, 4, 5, 8, 6, 9, 7, 10}, {1, 2, 3, 5, 4, 6, 7, 8, 9, 10}, {1, 2, 3, 5, 4, 6, 7, 9, 8, 10}, {1, 2, 3, 5, 4, 7, 6, 8, 9, 10}, {1, 2, 3, 5, 4, 7, 6, 9, 8, 10}, {1, 2, 3, 5, 4, 8, 6, 9, 7, 10}, {1, 2, 3, 6, 4, 7, 5, 8, 9, 10}, {1, 2, 3, 6, 4, 7, 5, 9, 8, 10}, {1, 2, 3, 6, 4, 8, 5, 9, 7, 10}, {1, 2, 3, 7, 4, 8, 5, 9, 6, 10}, {1, 3, 2, 4, 5, 6, 7, 8, 9, 10}, {1, 3, 2, 4, 5, 6, 7, 9, 8, 10}, {1, 3, 2, 4, 5, 7, 6, 8, 9, 10}, {1, 3, 2, 4, 5, 7, 6, 9, 8, 10}, {1, 3, 2, 4, 5, 8, 6, 9, 7, 10}, {1, 3, 2, 5, 4, 6, 7, 8, 9, 10}, {1, 3, 2, 5, 4, 6, 7, 9, 8, 10}, {1, 3, 2, 5, 4, 7, 6, 8, 9, 10}, {1, 3, 2, 5, 4, 7, 6, 9, 8, 10}, {1, 3, 2, 5, 4, 8, 6, 9, 7, 10}, {1, 3, 2, 6, 4, 7, 5, 8, 9, 10}, {1, 3, 2, 6, 4, 7, 5, 9, 8, 10}, {1, 3, 2, 6, 4, 8, 5, 9, 7, 10}, {1, 3, 2, 7, 4, 8, 5, 9, 6, 10}, {1, 4, 2, 5, 3, 6, 7, 8, 9, 10}, {1, 4, 2, 5, 3, 6, 7, 9, 8, 10}, {1, 4, 2, 5, 3, 7, 6, 8, 9, 10}, {1, 4, 2, 5, 3, 7, 6, 9, 8, 10}, {1, 4, 2, 5, 3, 8, 6, 9, 7, 10}, {1, 4, 2, 6, 3, 7, 5, 8, 9, 10}, {1, 4, 2, 6, 3, 7, 5, 9, 8, 10}, {1, 4, 2, 6, 3, 8, 5, 9, 7, 10}, {1, 4, 2, 7, 3, 8, 5, 9, 6, 10}, {1, 5, 2, 6, 3, 7, 4, 8, 9, 10}, {1, 5, 2, 6, 3, 7, 4, 9, 8, 10}, {1, 5, 2, 6, 3, 8, 4, 9, 7, 10}, {1, 5, 2, 7, 3, 8, 4, 9, 6, 10}, {1, 6, 2, 7, 3, 8, 4, 9, 5, 10}}
-
-m10to2row = L -> {{L#0,L#1}, {L#2,L#3}, {L#4,L#5}, {L#6,L#7}, {L#8,L#9}}
-
-syt10 = m10to2row\fill10
 netList\ transpose\ syt10
 elapsedTime inv10b = tab2poly(syt10#0,syt10#17,syt10#24,syt10#37,syt10#40); -- approx 448s
 elapsedTime inv10b = tab2polySeq(syt10#0,syt10#17,syt10#24,syt10#37,syt10#40); -- approx 448s
@@ -218,14 +143,6 @@ I = ideal mingens (I)
 tex oo
 --apply(11, i-> hilbertFunction(i, I))
 
-m12to2row = L -> {{L#0,L#1}, {L#2,L#3}, {L#4,L#5}, {L#6,L#7}, {L#8,L#9}, {L#10,L#11}}
-
-psyt12 = {{1,2,3,4,5,6,7,8,9,10,11,12},{1,2,3,4,5,6,7,8,9,11,10,12},{1,2,3,4,5,6,7,9,8,10,11,12},{1,2,3,4,5,6,7,9,8,11,10,12},{1,2,3,4,5,6,7,10,8,11,9,12},{1,2,3,4,5,7,6,8,9,10,11,12},{1,2,3,4,5,7,6,8,9,11,10,12},{1,2,3,4,5,7,6,9,8,10,11,12},{1,2,3,4,5,7,6,9,8,11,10,12},{1,2,3,4,5,7,6,10,8,11,9,12},{1,2,3,4,5,8,6,9,7,10,11,12},{1,2,3,4,5,8,6,9,7,11,10,12},{1,2,3,4,5,8,6,10,7,11,9,12},{1,2,3,4,5,9,6,10,7,11,8,12},{1,2,3,5,4,6,7,8,9,10,11,12},{1,2,3,5,4,6,7,8,9,11,10,12},{1,2,3,5,4,6,7,9,8,10,11,12},{1,2,3,5,4,6,7,9,8,11,10,12},{1,2,3,5,4,6,7,10,8,11,9,12},{1,2,3,5,4,7,6,8,9,10,11,12},{1,2,3,5,4,7,6,8,9,11,10,12},{1,2,3,5,4,7,6,9,8,10,11,12},{1,2,3,5,4,7,6,9,8,11,10,12},{1,2,3,5,4,7,6,10,8,11,9,12},{1,2,3,5,4,8,6,9,7,10,11,12},{1,2,3,5,4,8,6,9,7,11,10,12},{1,2,3,5,4,8,6,10,7,11,9,12},{1,2,3,5,4,9,6,10,7,11,8,12},{1,2,3,6,4,7,5,8,9,10,11,12},{1,2,3,6,4,7,5,8,9,11,10,12},{1,2,3,6,4,7,5,9,8,10,11,12},{1,2,3,6,4,7,5,9,8,11,10,12},{1,2,3,6,4,7,5,10,8,11,9,12},{1,2,3,6,4,8,5,9,7,10,11,12},{1,2,3,6,4,8,5,9,7,11,10,12},{1,2,3,6,4,8,5,10,7,11,9,12},{1,2,3,6,4,9,5,10,7,11,8,12},{1,2,3,7,4,8,5,9,6,10,11,12},{1,2,3,7,4,8,5,9,6,11,10,12},{1,2,3,7,4,8,5,10,6,11,9,12},{1,2,3,7,4,9,5,10,6,11,8,12},{1,2,3,8,4,9,5,10,6,11,7,12},{1,3,2,4,5,6,7,8,9,10,11,12},{1,3,2,4,5,6,7,8,9,11,10,12},{1,3,2,4,5,6,7,9,8,10,11,12},{1,3,2,4,5,6,7,9,8,11,10,12},{1,3,2,4,5,6,7,10,8,11,9,12},{1,3,2,4,5,7,6,8,9,10,11,12},{1,3,2,4,5,7,6,8,9,11,10,12},{1,3,2,4,5,7,6,9,8,10,11,12},{1,3,2,4,5,7,6,9,8,11,10,12},{1,3,2,4,5,7,6,10,8,11,9,12},{1,3,2,4,5,8,6,9,7,10,11,12},{1,3,2,4,5,8,6,9,7,11,10,12},{1,3,2,4,5,8,6,10,7,11,9,12},{1,3,2,4,5,9,6,10,7,11,8,12},{1,3,2,5,4,6,7,8,9,10,11,12},{1,3,2,5,4,6,7,8,9,11,10,12},{1,3,2,5,4,6,7,9,8,10,11,12},{1,3,2,5,4,6,7,9,8,11,10,12},{1,3,2,5,4,6,7,10,8,11,9,12},{1,3,2,5,4,7,6,8,9,10,11,12},{1,3,2,5,4,7,6,8,9,11,10,12},{1,3,2,5,4,7,6,9,8,10,11,12},{1,3,2,5,4,7,6,9,8,11,10,12},{1,3,2,5,4,7,6,10,8,11,9,12},{1,3,2,5,4,8,6,9,7,10,11,12},{1,3,2,5,4,8,6,9,7,11,10,12},{1,3,2,5,4,8,6,10,7,11,9,12},{1,3,2,5,4,9,6,10,7,11,8,12},{1,3,2,6,4,7,5,8,9,10,11,12},{1,3,2,6,4,7,5,8,9,11,10,12},{1,3,2,6,4,7,5,9,8,10,11,12},{1,3,2,6,4,7,5,9,8,11,10,12},{1,3,2,6,4,7,5,10,8,11,9,12},{1,3,2,6,4,8,5,9,7,10,11,12},{1,3,2,6,4,8,5,9,7,11,10,12},{1,3,2,6,4,8,5,10,7,11,9,12},{1,3,2,6,4,9,5,10,7,11,8,12},{1,3,2,7,4,8,5,9,6,10,11,12},{1,3,2,7,4,8,5,9,6,11,10,12},{1,3,2,7,4,8,5,10,6,11,9,12},{1,3,2,7,4,9,5,10,6,11,8,12},{1,3,2,8,4,9,5,10,6,11,7,12},{1,4,2,5,3,6,7,8,9,10,11,12},{1,4,2,5,3,6,7,8,9,11,10,12},{1,4,2,5,3,6,7,9,8,10,11,12},{1,4,2,5,3,6,7,9,8,11,10,12},{1,4,2,5,3,6,7,10,8,11,9,12},{1,4,2,5,3,7,6,8,9,10,11,12},{1,4,2,5,3,7,6,8,9,11,10,12},{1,4,2,5,3,7,6,9,8,10,11,12},{1,4,2,5,3,7,6,9,8,11,10,12},{1,4,2,5,3,7,6,10,8,11,9,12},{1,4,2,5,3,8,6,9,7,10,11,12},{1,4,2,5,3,8,6,9,7,11,10,12},{1,4,2,5,3,8,6,10,7,11,9,12},{1,4,2,5,3,9,6,10,7,11,8,12},{1,4,2,6,3,7,5,8,9,10,11,12},{1,4,2,6,3,7,5,8,9,11,10,12},{1,4,2,6,3,7,5,9,8,10,11,12},{1,4,2,6,3,7,5,9,8,11,10,12},{1,4,2,6,3,7,5,10,8,11,9,12},{1,4,2,6,3,8,5,9,7,10,11,12},{1,4,2,6,3,8,5,9,7,11,10,12},{1,4,2,6,3,8,5,10,7,11,9,12},{1,4,2,6,3,9,5,10,7,11,8,12},{1,4,2,7,3,8,5,9,6,10,11,12},{1,4,2,7,3,8,5,9,6,11,10,12},{1,4,2,7,3,8,5,10,6,11,9,12},{1,4,2,7,3,9,5,10,6,11,8,12},{1,4,2,8,3,9,5,10,6,11,7,12},{1,5,2,6,3,7,4,8,9,10,11,12},{1,5,2,6,3,7,4,8,9,11,10,12},{1,5,2,6,3,7,4,9,8,10,11,12},{1,5,2,6,3,7,4,9,8,11,10,12},{1,5,2,6,3,7,4,10,8,11,9,12},{1,5,2,6,3,8,4,9,7,10,11,12},{1,5,2,6,3,8,4,9,7,11,10,12},{1,5,2,6,3,8,4,10,7,11,9,12},{1,5,2,6,3,9,4,10,7,11,8,12},{1,5,2,7,3,8,4,9,6,10,11,12},{1,5,2,7,3,8,4,9,6,11,10,12},{1,5,2,7,3,8,4,10,6,11,9,12},{1,5,2,7,3,9,4,10,6,11,8,12},{1,5,2,8,3,9,4,10,6,11,7,12},{1,6,2,7,3,8,4,9,5,10,11,12},{1,6,2,7,3,8,4,9,5,11,10,12},{1,6,2,7,3,8,4,10,5,11,9,12},{1,6,2,7,3,9,4,10,5,11,8,12},{1,6,2,8,3,9,4,10,5,11,7,12},{1,7,2,8,3,9,4,10,5,11,6,12}};
-syt12 = m12to2row\ psyt12;
-goodTabList={{0,6,35,113,117},{0,6,35,117,113},{0,6,113,35,117},{0,6,113,117,35},{0,6,117,35,113},{0,6,117,113,35},{0,35,6,113,117},{0,35,6,117,113},{0,35,113,6,117},{0,35,113,117,6},{0,35,117,6,113},{0,35,117,113,6},{0,113,6,35,117},{0,113,6,117,35},{0,113,35,6,117},{0,113,35,117,6},{0,113,117,6,35},{0,113,117,35,6},{0,117,6,35,113},{0,117,6,113,35},{0,117,35,6,113},{0,117,35,113,6},{0,117,113,6,35},{0,117,113,35,6},{6,0,35,113,117},{6,0,35,117,113},{6,0,113,35,117},{6,0,113,117,35},{6,0,117,35,113},{6,0,117,113,35},{6,35,0,113,117},{6,35,0,117,113},{6,35,113,0,117},{6,35,113,117,0},{6,35,117,0,113},{6,35,117,113,0},{6,113,0,35,117},{6,113,0,117,35},{6,113,35,0,117},{6,113,35,117,0},{6,113,117,0,35},{6,113,117,35,0},{6,117,0,35,113},{6,117,0,113,35},{6,117,35,0,113},{6,117,35,113,0},{6,117,113,0,35},{6,117,113,35,0},{35,0,6,113,117},{35,0,6,117,113},{35,0,113,6,117},{35,0,113,117,6},{35,0,117,6,113},{35,0,117,113,6},{35,6,0,113,117},{35,6,0,117,113},{35,6,113,0,117},{35,6,113,117,0},{35,6,117,0,113},{35,6,117,113,0},{35,113,0,6,117},{35,113,0,117,6},{35,113,6,0,117},{35,113,6,117,0},{35,113,117,0,6},{35,113,117,6,0},{35,117,0,6,113},{35,117,0,113,6},{35,117,6,0,113},{35,117,6,113,0},{35,117,113,0,6},{113,0,6,35,117},{113,0,6,117,35},{113,0,35,6,117},{113,0,35,117,6},{113,0,117,6,35},{113,0,117,35,6},{113,6,0,35,117},{113,6,0,117,35},{113,6,35,0,117},{113,6,35,117,0},{113,6,117,0,35},{113,6,117,35,0},{113,35,0,6,117},{113,35,0,117,6},{113,35,6,0,117},{113,35,6,117,0},{113,35,117,0,6},{113,35,117,6,0},{113,117,0,6,35},{113,117,0,35,6},{113,117,6,0,35},{113,117,6,35,0},{113,117,35,0,6},{117,0,6,35,113},{117,0,6,113,35},{117,0,35,6,113},{117,0,35,113,6},{117,0,113,6,35},{117,0,113,35,6},{117,6,0,35,113},{117,6,0,113,35},{117,6,35,0,113},{117,6,35,113,0},{117,6,113,0,35},{117,35,0,6,113},{117,35,0,113,6},{117,35,113,0,6},{117,113,0,6,35},{117,113,0,35,6},{117,113,6,0,35},{0,5,32,36,91},{0,5,32,91,36},{0,5,36,32,91},{0,5,36,91,32},{0,5,91,32,36},{0,5,91,36,32},{0,32,5,36,91},{0,32,5,91,36},{0,32,36,5,91},{0,32,36,91,5},{0,32,91,5,36},{0,32,91,36,5},{0,36,5,32,91},{0,36,5,91,32},{0,36,32,5,91},{0,36,32,91,5},{0,36,91,5,32},{0,36,91,32,5},{0,91,5,32,36},{0,91,5,36,32},{0,91,32,5,36},{5,0,32,36,91},{5,0,32,91,36},{5,0,36,32,91},{5,0,36,91,32},{5,0,91,32,36},{5,32,0,36,91},{5,32,0,91,36},{5,32,36,0,91},{5,32,36,91,0},{5,32,91,0,36},{5,36,0,32,91},{5,36,0,91,32},{5,36,91,0,32},{5,91,0,32,36},{32,0,5,36,91},{32,0,5,91,36},{32,0,36,5,91},{32,0,36,91,5},{32,0,91,5,36},{32,5,0,36,91},{32,5,36,0,91},{32,36,0,5,91},{32,36,0,91,5},{32,36,91,0,5},{32,91,0,5,36},{36,0,5,32,91},{36,0,5,91,32},{36,0,32,5,91},{36,0,32,91,5},{36,0,91,5,32},{36,91,0,5,32},{91,0,5,32,36},{0,6,64,65,129},{0,6,64,129,65},{0,6,65,64,129},{0,6,65,129,64},{0,6,129,64,65},{0,64,6,65,129},{0,64,6,129,65},{0,64,65,6,129},{0,64,65,129,6},{0,64,129,6,65},{0,64,129,65,6},{0,65,6,64,129},{0,65,6,129,64},{0,65,129,6,64},{0,129,6,64,65},{0,129,64,6,65},{0,129,64,65,6},{6,0,64,65,129},{6,0,64,129,65},{6,0,65,64,129},{6,0,65,129,64},{6,0,129,64,65},{6,64,0,65,129},{6,64,0,129,65},{6,64,65,0,129},{6,64,65,129,0},{6,64,129,0,65},{6,65,0,64,129},{6,65,0,129,64},{6,65,129,0,64},{6,129,0,64,65},{64,0,6,65,129},{64,0,6,129,65},{64,0,65,6,129},{64,0,65,129,6},{64,0,129,6,65},{64,6,0,65,129},{64,6,65,0,129},{64,65,0,6,129},{64,129,0,6,65},{65,0,6,64,129},{129,0,6,64,65},{0,14,87,102,110},{0,14,87,110,102},{0,14,102,87,110},{0,14,102,110,87},{0,14,110,87,102},{0,87,14,102,110},{0,87,102,14,110},{0,87,102,110,14},{0,102,14,87,110},{0,110,14,87,102},{14,0,87,102,110},{87,0,14,102,110},{102,0,14,87,110},{0,41,78,115,116},{0,43,55,121,124},{0,17,34,72,119},{0,2,36,89,110},{0,3,42,48,116},{0,3,13,15,110},{0,1,12,44,46},{0,5,39,40,42},{0,27,58,80,93}};
-minList12 =  unique (sort\goodTabList)
-
-fill12 = apply(goodTabList, L-> apply(L, l ->syt12#l))
 m12to2row \last fill12
 
 
