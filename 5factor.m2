@@ -21,20 +21,88 @@ tab2poly = (ta,tb,tc,td,te)->(
     E := apply(te, L -> list2mats(L, e));
     usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
     F :=1_R; T :=1_R;
-    for z to dg-1 do ( T=product(
+    for z to dg-1 do time ( T=product(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
         F = F*T;
-        time F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
+        F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
+    ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
+    sub(F,X)
+)
+
+tab2polyList = (ta,tb,tc,td,te,L)->(
+    dg := length flatten ta;
+    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
+    A := apply(ta, L -> list2mats(L, a));
+    B := apply(tb, L -> list2mats(L, b));
+    C := apply(tc, L -> list2mats(L, c));
+    D := apply(td, L -> list2mats(L, d));
+    E := apply(te, L -> list2mats(L, e));
+    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
+    F :=1_R; T :=1_R;
+    for z in L do ( T=product(
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
+        print( {usedA,usedB,usedC,usedD,usedE});
+        F = F*T;
+        F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
+    ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
+    sub(F,X)
+)
+
+
+parallelSum = (X, f, result) -> (
+    mutex := new AtomicInt;
+    T := apply(X, x -> schedule(() -> (
+        y := f x;
+        while(exchange(mutex, 1) == 1) do null;
+        result += y;
+        store(mutex, 0))));
+    while not all(T, isReady) do null;
+    result)
+
+sumList = flatten flatten flatten flatten apply(2,m-> apply(2, l-> apply(2,k-> apply(2, j-> apply(2,i->{i,j,k,l,m})))))
+
+tab2polySeq = (ta,tb,tc,td,te)->(
+    dg := length flatten ta;
+    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
+    A := apply(ta, L -> list2mats(L, a));    B := apply(tb, L -> list2mats(L, b));    C := apply(tc, L -> list2mats(L, c));
+    D := apply(td, L -> list2mats(L, d));    E := apply(te, L -> list2mats(L, e));
+    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
+    F :=1_R;T :=1_R;
+    Xmat = transpose matrix {flatten flatten flatten flatten( apply(2, i-> apply(2, j-> apply(2, k-> apply(2, l-> apply(2, m-> x_(i,j,k,l,m)))))))};
+    for z to dg-1 do time ( T=product(
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
+        F= F*T; -- check if it's faster to do a for loop with intermediate values stored:
+        --dl = diff(matrix {flatten flatten flatten flatten( apply(2, i-> a_(i,z))*apply(2, j-> b_(j,z))*apply(2, k-> c_(k,z))*apply(2, l-> d_(l,z))*apply(2, m-> e_(m,z)))}, F); -- diff(matrix,poly) is 5x faster than apply(list, diff poly)?
+        -- dle = diff(matrix {apply(2, m-> e_(m,z))}, F);
+        -- dld = diff(matrix {apply(2, m-> d_(m,z))}, dle);
+        -- dlc = diff(matrix {apply(2, m-> c_(m,z))}, dld);
+        -- dlb = diff(matrix {apply(2, m-> b_(m,z))}, dlc);
+        -- dl = diff(matrix {apply(2, m-> a_(m,z))}, dlb);
+        -- F = trace(dl*Xmat);
+          abcdeMat = matrix {flatten flatten flatten flatten( apply(2, i-> apply(2, j-> apply(2, k-> apply(2, l-> apply(2, m->a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z)))))))};
+        --F = parallelSum(sumList, L-> x_(L#0,L#1,L#2,L#3,L#4)*diff(a_(L#0,z)*b_(L#1,z)*c_(L#2,z)* d_(L#3,z)*e_(L#4,z), F),0_R);
+        F = trace( diff(abcdeMat, F)*Xmat);
     ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
     sub(F,X)
 )
 
 syt4 = {{{1,2},{3,4}},{{1,3},{2,4}}}
-f4 = tab2poly(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1);
+elapsedTime f4 = tab2poly(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1);
+for xx in permutations({0,1,2,3}) do (print(xx); elapsedTime f4 = tab2polyList(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1,xx);)
+elapsedTime f4tmp = tab2polySeq(syt4#0,syt4#0,syt4#0,syt4#0,syt4#1); 
+f4 - f4tmp
 I4 = ideal(f4);
 time I4 = I4 + cycle I4 + cycle2 I4 + cycle3 I4 + cycle4 I4;
 betti mingens I4 -- these are the first 5 primary invariants - but let's do a randomized jacobian to make sure we think they're algebraically independent.
@@ -46,6 +114,9 @@ rank phi J4 -- random rank 5 gives us some confidence that it is rank 5. -- I th
 primaryInvariants = flatten entries gens I4;
 syt6 = {{{1,2},{3,4},{5,6}}, {{1,2},{3,5},{4,6}},{{1,3},{2,4},{5,6}}, {{1,3},{2,5},{4,6}}, {{1,4},{2,5},{3,6}}}
 elapsedTime inv6 = tab2poly(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4); -- 1.09s (tensor product ring) vs .934s (flat ring)
+elapsedTime inv6tmp = tab2polySeq(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4); -- 1.02 =20% faster for parallel sum! 4.4s for diff array
+for xx in permutations({0,1,2,3,4,5}) do (print(xx); elapsedTime tab2polyList(syt6#0, syt6#1, syt6#2, syt6#3, syt6#4,xx);)
+inv6-inv6tmp
 I6 = ideal inv6;
 I = I4+I6;
 J46 = jacobian(I); -- to show that these polynomials are algebraically independent, you could have a general point in their intersection, then compute their Jacobian. 
@@ -59,9 +130,14 @@ m8to2row = L -> {{L#0,L#1}, {L#2,L#3}, {L#4,L#5}, {L#6,L#7}}
 syt8 = m8to2row\fill8
 
 elapsedTime inv8 = tab2poly(syt8#0,syt8#0,syt8#2,syt8#9,syt8#12); -- 20s
+elapsedTime inv8tmp = tab2polySeq(syt8#0,syt8#0,syt8#2,syt8#9,syt8#12); -- 22s -- similar
+inv8-inv8tmp
 elapsedTime inv8b = tab2poly(syt8#0,syt8#2,syt8#3,syt8#12,syt8#13); -- 30s
+elapsedTime inv8btmp = tab2polySeq(syt8#0,syt8#2,syt8#3,syt8#12,syt8#13); -- 28.9s
 elapsedTime inv8c = tab2poly(syt8#0,syt8#0,syt8#12,syt8#12,syt8#12); -- 24s -- not independent of deg 4
+elapsedTime inv8ctmp = tab2polySeq(syt8#0,syt8#0,syt8#12,syt8#12,syt8#12); -- 22.5s -- not independent of deg 4
 elapsedTime inv8d = tab2poly(syt8#0,syt8#3,syt8#6,syt8#9,syt8#13); -- 39s
+elapsedTime inv8dtmp = tab2polySeq(syt8#0,syt8#3,syt8#6,syt8#9,syt8#13); -- 38s
 I8 = ideal{ inv8, inv8c, inv8b,inv8d};  -- leave out inv8c from the non-minimal generators. 
 primaryInvariants = primaryInvariants|{inv8, inv8c, inv8d};
 rank rp jacobian ideal primaryInvariants
@@ -109,7 +185,7 @@ m10to2row = L -> {{L#0,L#1}, {L#2,L#3}, {L#4,L#5}, {L#6,L#7}, {L#8,L#9}}
 syt10 = m10to2row\fill10
 netList\ transpose\ syt10
 elapsedTime inv10b = tab2poly(syt10#0,syt10#17,syt10#24,syt10#37,syt10#40); -- approx 448s
-
+elapsedTime inv10b = tab2polySeq(syt10#0,syt10#17,syt10#24,syt10#37,syt10#40); -- approx 448s
 time rank rp jacobian( ideal(inv10b) + ideal primaryInvariants)
 PI = ideal(inv10b) + ideal primaryInvariants;
 betti  PI
@@ -157,6 +233,17 @@ g12 = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12}, {1, 3, 2, 4, 5, 6, 7, 8, 9, 11, 
 for gg in g12 list for ss to #syt12 -1 list if gg==(syt12#ss) then ss else continue 
 g = "g"
 elapsedTime inv12 = tab2poly(syt12#0, syt12#43, syt12#54, syt12#121, syt12#124); -- approx ?
+-- used 0.003743s (cpu); 0.003737s (thread); 0s (gc)
+ -- used 0.019548s (cpu); 0.0195507s (thread); 0s (gc)
+ -- used 0.095837s (cpu); 0.0958415s (thread); 0s (gc)
+ -- used 0.348665s (cpu); 0.348668s (thread); 0s (gc)
+ -- used 6.92518s (cpu); 3.12194s (thread); 0s (gc)
+ -- used 40.3507s (cpu); 23.272s (thread); 0s (gc)
+ -- used 504.258s (cpu); 195.734s (thread); 0s (gc)
+ -- used 546.026s (cpu); 383.372s (thread); 0s (gc)
+ -- used 5026.21s (cpu); 2568.05s (thread); 0s (gc)
+ -- used 9281.81s (cpu); 5324.85s (thread); 0s (gc)
+
 time rank rp jacobian( ideal(inv12) + PI)
 PI = PI + ideal(inv12) 
 betti  PI
