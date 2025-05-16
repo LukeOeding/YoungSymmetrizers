@@ -1,6 +1,7 @@
 ---Young Symmetrizers for 5 factors
 --restart -- input"5factor.m2"
-KK = ZZ/nextPrime(100); --KK = QQ;
+--KK = ZZ/nextPrime(100); --KK = QQ;
+KK = QQ;
 X = KK[x_(0,0,0,0,0)..x_(1,1,1,1,1)];
 primaryInvariants = {};
 rndPt = () -> map(KK, X, random(KK^1, KK^(numgens X))) 
