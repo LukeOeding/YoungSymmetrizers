@@ -31,8 +31,8 @@ tab2poly = (L)->(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
         F = F*T;
         time F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
-<<<<<<< HEAD
-=======
+--<<<<<<< HEAD
+--=======
     ); -- after many checks (parallel sum, making auxillary arrays, using diff over a tensor, etc), this seems to be the most efficient way to execute the sum.
     sub(F,X)
 );
@@ -79,14 +79,12 @@ tab2polyList = (ta,tb,tc,td,te,L)->(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
         F = F*T;
         F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
->>>>>>> tmp
     ); -- should check to see if you make auxillary variables for the derivative wrt some of the abc's and split up the computation if that speeds things up more.
     sub(F,X)
 );
 -- reuse the variables, just set the pair to the first variable.
 
 --- points 
-<<<<<<< HEAD
 gx = gens X
 pseudoCartan = apply(16,i-> gx_(31-i) => gx_i)
 randomLine = apply(32,i-> gx_(i) => random(KK)*gx_0 + random(KK)*gx_15+ random(KK)*gx_31)
@@ -239,4 +237,4 @@ goodTabList12={{0,6,35,113,117},{0,6,35,117,113},{0,6,113,35,117},{0,6,113,117,3
 minList12 = sort unique (sort\goodTabList12);
 fill12 = apply(goodTabList12, L-> apply(L, l ->syt12#l));
 end;
->>>>>>> tmp
+-->>>>>>> tmp
