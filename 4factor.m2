@@ -1,57 +1,55 @@
----Young Symmetrizers for 5 factors
---restart -- input"5factor.m2"
+---Young Symmetrizers for 4 factors
+-- !work in progress!
+--restart 
 --KK = ZZ/nextPrime(100); --KK = QQ;
 KK = QQ;
-X = KK[x_(0,0,0,0,0)..x_(1,1,1,1,1)];
-primaryInvariants = {};
+dims = {3,3,3,3}
+X = KK[x_(0,0,0,0)..x_(dims_0-1,dims_1-1,dims_2-1,dims_3-1)];
 rndPt = () -> map(KK, X, random(KK^1, KK^(numgens X))) 
 rp = rndPt();
-cycle = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i2,i3,i4,i5,i1) ) ) ) )) );
-cycle2 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i3,i4,i5,i1,i2) ) ) ) )) );
-cycle3 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i4,i5,i1,i2,i3) ) ) ) )) );
-cycle4 = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i5,i1,i2,i3,i4) ) ) ) )) );
-swap = map(X,X, flatten flatten flatten flatten  apply(2, i1-> apply(2, i2->apply(2, i3->apply(2, i4->apply(2, i5-> x_(i2,i1,i3,i4,i5) ) ) ) )) );
-list2mats = (L,a) -> matrix apply(2, i-> apply( L, j-> a_(i,j-1)));
+cycle = map(X,X, flatten flatten flatten flatten  apply(dims_0, i1-> apply(dims_1, i2->apply(dims_2, i3->apply(dims_3, i4->x_(i2,i3,i4,i1) ) ) ) )) ;
+cycle2 = map(X,X, flatten flatten flatten flatten  apply(dims_0, i1-> apply(dims_1, i2->apply(dims_2, i3->apply(dims_3, i4->x_(i3,i4,i1,i2) ) ) ) )) ;
+cycle3 = map(X,X, flatten flatten flatten flatten  apply(dims_0, i1-> apply(dims_1, i2->apply(dims_2, i3->apply(dims_3, i4->x_(i4,i1,i2,i3) ) ) ) )) ;
+swap = map(X,X, flatten flatten flatten flatten  apply(dims_0, i1-> apply(dims_1, i2->apply(dims_2, i3->apply(dims_3, i4->x_(i2,i1,i3,i4) ) ) ) )) ;
+list2mats = (L,a) -> matrix apply(#L, i-> apply( L, j-> a_(i,j-1)));
+
 tab2poly = (L)->(
     ta:=L#0; tb:=L#1;tc:=L#2;td:=L#3;te:=L#4;
-    dg := length flatten ta;
-    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
+    dg := length flatten ta;    
+    R := X[a_(0,0)..a_(dims_0-1,dg-1),b_(0,0)..b_(dims_1-1,dg-1),c_(0,0)..c_(dims_2-1,dg-1),d_(0,0)..d_(dims_3-1,dg-1)];
     A := apply(ta, L -> list2mats(L, a));
     B := apply(tb, L -> list2mats(L, b));
     C := apply(tc, L -> list2mats(L, c));
     D := apply(td, L -> list2mats(L, d));
-    E := apply(te, L -> list2mats(L, e));
-    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
+    usedA := {};usedB := {};usedC := {};usedD := {};
     F :=1_R; T :=1_R;
+    -- check that these loops end at the right place... dg/2-1?
     for z to dg-1 do time ( T=product(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue));
         F = F*T;
-        time F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->x_(i,j,k,l,m)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
+        time F= sum(dims_0, l-> sum(dims_1,k-> sum(dims_2, j-> sum(dims_3,i->x_(i,j,k,l)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z),F)))));
     ); -- after many checks (parallel sum, making auxillary arrays, using diff over a tensor, etc), this seems to be the most efficient way to execute the sum.
     sub(F,X)
 );
 
 tab2polyEval = (L, rules)->(
-    ta:=L#0; tb:=L#1;tc:=L#2;td:=L#3;te:=L#4;
+    ta:=L#0; tb:=L#1;tc:=L#2;td:=L#3;
     dg := length flatten ta;
-    R := X[a_(0,0)..a_(1,dg-1),b_(0,0)..b_(1,dg-1),c_(0,0)..c_(1,dg-1),d_(0,0)..d_(1,dg-1),e_(0,0)..e_(1,dg-1)];
+    R := X[a_(0,0)..a_(dims_0-1,dg-1),b_(0,0)..b_(dims_1-1,dg-1),c_(0,0)..c_(dims_2-1,dg-1),d_(0,0)..d_(dims_3-1,dg-1)];
     A := apply(ta, L -> list2mats(L, a));
     B := apply(tb, L -> list2mats(L, b));
     C := apply(tc, L -> list2mats(L, c));
     D := apply(td, L -> list2mats(L, d));
-    E := apply(te, L -> list2mats(L, e));
-    usedA := {};usedB := {};usedC := {};usedD := {};usedE := {};
+    usedA := {};usedB := {};usedC := {};usedD := {};
     F :=1_R; T :=1_R;
     for z to dg-1 do ( T=product(
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,ta#i) and not isMember(i,usedA) then (usedA = usedA|{i}; det A_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tb#i) and not isMember(i,usedB) then (usedB = usedB|{i}; det B_i) else continue)|
         (for i to sub(dg/2-1,ZZ) list if isMember(z+1,tc#i) and not isMember(i,usedC) then (usedC = usedC|{i}; det C_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue)|
-        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,te#i) and not isMember(i,usedE) then (usedE = usedE|{i}; det E_i) else continue));
+        (for i to sub(dg/2-1,ZZ) list if isMember(z+1,td#i) and not isMember(i,usedD) then (usedD = usedD|{i}; det D_i) else continue));
         F = F*T;
         F= sum(2,m-> sum(2, l-> sum(2,k-> sum(2, j-> sum(2,i->sub(x_(i,j,k,l,m),rules)*diff(a_(i,z)*b_(j,z)*c_(k,z)*d_(l,z)*e_(m,z),F))))));
     ); -- after many checks (parallel sum, making auxillary arrays, using diff over a tensor, etc), this seems to be the most efficient way to execute the sum.
