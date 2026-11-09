@@ -184,12 +184,12 @@ C3 = genMat(Rc3, 3,3);
 time T1 =det(A1)*det(B1)*det(B2)*det(B3)*det(C1)*det(C2)*det(C3); -- 1.6s
 F1=T1; elapsedTime for d from 0 to 2 do F1= sum(cc+1,k-> sum(bb+1, j-> sum(aa+1,i->x_(i,j,k)*diff(a_(i,d)*b_(j,d)*c_(k,d),F1)))); --27s
 myList = flatten flatten apply(aa+1, i-> apply(bb+1, j-> apply(cc+1, k-> {i,j,k}  )));
-F=T1; time for d from 0 to 2 do F = sum parallelApply(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 22.4s
-F1 ==F
+-- F=T1; time for d from 0 to 2 do F = sum parallelApply(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 22.4s
+-- F1 ==F
 
-allowableThreads = maxAllowableThreads -- this didn't decrease the time taken...
-F=T1; elapsedTime time for d from 0 to 2 do F = sum parallelApply(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 22.4s
-F1 ==F
+-- allowableThreads = maxAllowableThreads -- this didn't decrease the time taken...
+-- F=T1; elapsedTime time for d from 0 to 2 do F = sum parallelApply(myList, L-> x_(L#0, L#1, L#2)*diff(a_(L#0,d)*b_(L#1,d)*c_(L#2,d),F)); -- 22.4s
+-- F1 ==F
 
 
 -- is there a parallelSum function? If not, why not?
@@ -374,3 +374,154 @@ time for d from 0 to dg-1 do( print(size F); F= sum(cc+1,k-> sum(bb+1, j-> sum(c
 size F
 toString F
 
+
+
+
+binomial(36+26,26)
+
+--
+--For format $3\times 3\times 3$, the degree 6, 9, 12 invariants respectively have 1152, 9216, and 209061 terms. 
+-- the expression for the hdet is I3
+-- f6^3*f9^2 - f6^2*f12^2 + 36*f_6*f9^2*f12 + 108*f9^4 - 32*f12^3
+
+-- exponent vectors:
+ev = {{3,2,0}, {2,0,2}, {1,2,1}, {0,4,0},{0,0,3}}
+for e in ev list ((e_0)*6 + (e_1)*9+(e_2)*12)
+
+for e in ev list {binomial(1152+e_0-1, e_0), binomial(9216+e_1-1, e_1), binomial(209061+e_2-1, e_2) }
+ + (e_1)*9+(e_2)*12)
+ factor 209061
+
+ binomial(24+15,15)
+restart
+R = QQ[a_0..a_2]**QQ[b_0..b_2]**QQ[c_0..c_2]
+peek R
+f = hilbertFunction(R)
+f({2,2,2})
+binomial(27+1,2)
+
+restart
+-- find the number of torus invariant monomials for a tensor space:
+-- the matrix case:
+      needsPackage"InvariantRing"
+      n = 4
+      S = QQ[x_(0,0)..x_(n-1,n-1)]
+      E = id_(ZZ^n)
+      W =transpose matrix  flatten flatten apply(n, i-> apply(n,j-> entries ( (E^{i})|(E^{j}))))
+      da = diagonalAction(W, S)
+      equivariantHilbertSeries da
+      hs = equivariantHilbertSeries(da, Order => n+1);
+      tr = ring hs
+      diff(product(2*n, i-> ζ_i),hs)
+      diff(T^4,hs)
+      -- 3 factor binary tensor case:
+
+      n = 2
+      d=4
+      S = QQ[x_(0,0,0)..x_(n-1,n-1,n-1)]
+      E = id_(ZZ^n)
+      W =transpose matrix  flatten flatten flatten apply(n, i-> apply(n,j-> apply(n,k-> entries ( (E^{i})|(E^{j})|(E^{k})))))
+      da = diagonalAction(W, S)
+      equivariantHilbertSeries da
+      hs = equivariantHilbertSeries(da, Order => d+1);
+      tr = ring hs
+      Z = baseRing tr
+      h4 = sub(diff(T^4,hs), Z) -- gotta divide by 4! for the 4th derivative
+
+      sub(diff(product(3*n, i-> ζ_i^2),h4), ZZ)*(1/2^6)*(1/4!) -- have to divide by 2 for each derivative!
+  -- this checks in a brute force way that the answer is correct in this case
+      L = flatten flatten flatten for i1 to 1 list for i2 to 1 list for i3 to 1 list for i4 to 1 list if i1+i2+i3+i4 == 2 then {i1,i2,i3,i4} else continue
+
+      ML = unique flatten flatten for I in L list for J in L list for K in L list product(4, i-> x_(I_i, J_i, K_i))
+
+      #ML
+
+-- 4 factor binary tensor case:
+
+      n = 2
+      d=4
+      S = QQ[x_(0,0,0,0)..x_(n-1,n-1,n-1,n-1)]
+      E = id_(ZZ^n);
+      W =transpose matrix flatten  flatten flatten flatten apply(n, i-> apply(n,j-> apply(n,k-> apply(n,ell-> entries ( (E^{i})|(E^{j})|(E^{k})|(E^{ell}))))))
+      da = diagonalAction(W, S);
+      tmp = equivariantHilbertSeries da
+      toString tmp#1
+      hs = equivariantHilbertSeries(da, Order => d+1);
+      toString equivariantHilbertSeries(da)
+      tr = ring hs
+      Z = baseRing tr
+      h4 = diff(T^d,hs); -- gotta divide by 4! for the 4th derivative
+      sub(diff(product(4*n, i-> (ζ_i)^2),h4),ZZ)/(2^8*d!)
+      
+
+    
+      -- 3 factor tensor case: # wt-0 monomials:
+      -- used Maple to get these coefficients
+      -- d = 3 36
+      -- d = 6, 1152 
+      -- d = 9, 22620
+      -- d = 12,  302274
+      -- d = 15, 2986785
+      -- d = 18, 23230329
+      netList {factor\{36, 1152, 22620, 302274, 2986785}}
+-- the fundamental invariants have this many terms:
+-- 209061
+
+
+      n = 3
+      S = QQ[x_(0,0,0)..x_(n-1,n-1,n-1)]
+      E = id_(ZZ^n)
+      W =transpose matrix  flatten flatten flatten apply(n, i-> apply(n,j-> apply(n,k-> entries ( (E^{i})|(E^{j})|(E^{k})))))
+      da = diagonalAction(W, S)
+      toString equivariantHilbertSeries da
+      d=6
+      hs = equivariantHilbertSeries(da, Order => d+1)
+      tr = ring hs
+      Z = baseRing tr
+      hd = sub(diff(T^d,hs), Z)
+      first terms hd
+      tmp = diff(product(3*n, i-> ζ_i^2),hd)
+      sub(tmp, QQ)*(1/(2!)^9)*(1/d!) -- have to divide by 3! for each derivative! and d! for the T^d derivative
+      d=9
+      hs = equivariantHilbertSeries(da, Order => d+1);
+      tr = ring hs
+      Z = baseRing tr
+      hd = sub(diff(T^d,hs) ,Z);
+      tmp = diff(product(3*n, i-> ζ_i^3),hd)
+      sub(tmp, QQ)*(1/(3!)^9)*(1/d!) -- have to divide by 3! for each derivative! and d! for the T^d derivative
+      
+      d = 12
+      hs = equivariantHilbertSeries(da, Order => d+1);
+      tr = ring hs
+      Z = baseRing tr
+      hd = sub(diff(T^d,hs) ,Z);
+      tmp = diff(product(3*n, i-> ζ_i^4),hd)
+      sub(tmp, QQ)*(1/(4!)^9)*(1/d!) -- have to divide by 4! for each derivative! and d! for the T^d derivative 
+
+      d = 36
+      hs = equivariantHilbertSeries(da, Order => d+1);
+      hd = diff(T^d,hs);
+      tmp = diff(product(3*n, i-> ζ_i^4),hd)
+      sub(tmp, QQ)*(1/(4!)^9)*(1/d!) -- have to divide by 4! for each derivative! and d! for the T^d derivative 
+
+S
+
+restart
+
+R = QQ[x_0..x_10]
+f = random(4, R)
+#terms f
+#terms random(8, R)
+#terms (f^2)
+binomial(#terms f, 2)
+
+restart
+R = QQ[x_(0,0,0)..x_(2,2,2)]
+Rt = R[t_0,t_1,t_2]
+r = res ideal gens Rt
+T = sum(3, i-> t_i* matrix(apply(3, j-> apply(3, k-> x_(i,j,k)))))
+K = sub(diff(r.dd_2, T),R);
+time f9 = det(K, Strategy=>Cofactor); -- if you don't put in "cofactor" it takes forever
+#terms f9
+time f92 = f9^2;
+#terms f92
